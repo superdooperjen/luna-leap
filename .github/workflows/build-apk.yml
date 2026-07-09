@@ -1,0 +1,63 @@
+name: Build Android APK
+
+on:
+  push:
+    branches: ["main", "claude/**"]
+    paths-ignore:
+      - "**.apk"
+      - "**.md"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: apk-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Build web app
+        run: |
+          npm ci
+          npm run build
+
+      - name: Sync Capacitor
+        run: npx cap sync android
+
+      - name: Build debug APK
+        run: |
+          cd android
+          chmod +x gradlew
+          ./gradlew assembleDebug --no-daemon
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: luna-leap-apk
+          path: android/app/build/outputs/apk/debug/app-debug.apk
+
+      - name: Commit APK to repo
+        run: |
+          cp android/app/build/outputs/apk/debug/app-debug.apk luna-leap.apk
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add luna-leap.apk
+          if ! git diff --cached --quiet; then
+            git commit -m "Build luna-leap.apk [skip ci]"
+            git push
+          fi

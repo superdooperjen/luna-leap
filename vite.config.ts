@@ -1,7 +1,7 @@
 import { defineConfig } from "vite";
 
-// base is set for GitHub Pages project-site hosting (username.github.io/luna-leap/).
-// Change to "/" if deploying to a custom domain or Vercel/Netlify.
+// Relative base works everywhere the game ships: GitHub Pages project sites
+// (username.github.io/luna-leap/), the Capacitor Android app, and any static host.
 export default defineConfig({
-  base: "/luna-leap/",
+  base: "./",
 });
